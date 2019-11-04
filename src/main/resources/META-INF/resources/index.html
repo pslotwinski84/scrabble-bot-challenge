@@ -1,0 +1,1902 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>RAD SCRABBLE</title>
+
+<style>
+table {
+	width: 100%;
+}
+
+th {
+	width: 50%;
+	border: none;
+	background-color: #f1cab5;
+	height: 40px;
+}
+
+td {
+	width: 50%;
+	vertical-align: top;
+	border: none;
+	text-align: left;
+	padding: 10px;
+}
+
+.draggable {
+	z-index: 10000;
+}
+
+.letter {
+	display: inline;
+	background: gray;
+	font-size: 30px;
+	z-index: 10000;
+}
+
+.scoresComp {
+	position: fixed;
+	top: 50px;
+	left: 550px;
+	font-size: 30px;
+	z-index: 10000;
+}
+
+.scoresPlay {
+	position: fixed;
+	top: 85px;
+	left: 550px;
+	font-size: 30px;
+	z-index: 10000;
+}
+
+#menu {
+	position: fixed;
+	left: 0px;
+	top: 0px;
+	width: 525px;
+	height: 525px;
+	background-color: orange;
+	z-index: 100000000;
+	overflow-y: scroll;
+	max-height: 600px;
+	display: none;
+}
+
+.replay {
+	display: none;
+}
+
+#exchange {
+	width: 245px;
+	height: 35px;
+	background: red;
+	position: fixed;
+	left: 350px;
+	top: 560px;
+}
+
+    .blink_me {
+ 		animation: blinker 1s linear infinite;
+	}
+
+	@keyframes blinker {
+  		50% {
+    	opacity: 0;
+  	}
+}
+
+}
+
+</style>
+
+
+<link rel="stylesheet" href="/scrab/js/sm-core-css.css">
+<link rel="stylesheet" href="/scrab/js/sm-simple.css">
+
+<script src="/scrab/js/jquery-3.3.1.min.js"></script>
+<script src="/scrab/js/jquery-ui.js"></script>
+<script src="/scrab/js/jquery.smartmenus.min.js"></script>
+<script
+	src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.1.4/sockjs.min.js"></script>
+<script
+	src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+<script>
+
+$.ajaxSetup({
+	  contentType: "application/json; charset=utf-8"
+	});
+
+	class Unit {
+
+	  constructor(letter, row, column, bonus) {
+	    this.letter = letter;
+	    this.row = row;
+	    this.column = column;
+	    this.bonus = bonus;
+
+	  }
+	}
+
+	class Ex {
+
+	  constructor(letter, row, column, bonus) {
+	    this.letter = letter;
+	    this.row = row;
+	    this.column = column;
+	    this.bonus = bonus;
+
+	  }
+	}
+
+	class Deck {
+
+	  constructor(letter, row, column, bonus) {
+	    this.letter = letter;
+	    this.row = row;
+	    this.column = column;
+	    this.bonus = bonus;
+
+	  }
+	}
+
+	class Word {
+	  constructor(word, score) {
+	    this.word = word;
+	    this.score = score;
+	  }
+
+	  addLetter(letter) {
+	    word.push(letter);
+	    return null;
+	  }
+	}
+	class Words {
+	  constructor(words, score) {
+	    this.words = words;
+	    this.score = score;
+	  }
+	}
+
+	class History {
+	  constructor(date, botpoints, humanpoints, win) {
+	    this.date = date;
+	    this.botpoints = botpoints;
+	    this.humanpoints = humanpoints;
+	    this.win = win;
+	  }
+	}
+
+	class Histories {
+	  constructor(histories) {
+	    this.histories = histories;
+	  }
+	}
+
+	class Hist {
+	  constructor(history) {
+	    this.history = history;
+	  }
+	}
+
+	window.onbeforeunload = function() {
+	  // Do something
+	}
+
+	function menu() {
+	  getHistory();
+
+	}
+
+	var replayCounter = 0;
+	var replayWords = new Words();
+	var myScore = 0;
+	var botscore = 0;
+	var lastScore = 0;
+	var currentLetters = new Array();
+	var gameCounter = 0;
+	var table = new Array(15);
+	var length = 35;
+	var letters = new Array();
+	var points = new Array();
+	var lettersArr = new Array();
+	var lettersUser = new Array();
+	var units = new Array();
+	var units_done = new Array();
+	var contactmap = new Map();
+	var toBreak = false;
+	var exes = new Array();
+	var decks = new Array();
+
+	letters.push("a");
+	points.push(1);
+	letters.push("a");
+	points.push(1);
+	letters.push("a");
+	points.push(1);
+	letters.push("a");
+	points.push(1);
+	letters.push("a");
+	points.push(1);
+	letters.push("a");
+	points.push(1);
+	letters.push("a");
+	points.push(1);
+	letters.push("a");
+	points.push(1);
+	letters.push("a");
+	points.push(1);
+	letters.push("ą");
+	points.push(5);
+	letters.push("b");
+	points.push(3);
+	letters.push("b");
+	points.push(3);
+	letters.push("c");
+	points.push(2);
+	letters.push("c");
+	points.push(2);
+	letters.push("c");
+	points.push(2);
+	letters.push("ć");
+	points.push(6);
+	letters.push("d");
+	points.push(2);
+	letters.push("d");
+	points.push(2);
+	letters.push("d");
+	points.push(2);
+	letters.push("e");
+	points.push(1);
+	letters.push("e");
+	points.push(1);
+	letters.push("e");
+	points.push(1);
+	letters.push("e");
+	points.push(1);
+	letters.push("e");
+	points.push(1);
+	letters.push("e");
+	points.push(1);
+	letters.push("e");
+	points.push(1);
+	letters.push("ę");
+	points.push(5);
+	letters.push("f");
+	points.push(5);
+	letters.push("g");
+	points.push(3);
+	letters.push("g");
+	points.push(3);
+	letters.push("h");
+	points.push(3);
+	letters.push("h");
+	points.push(3);
+	letters.push("i");
+	points.push(1);
+	letters.push("i");
+	points.push(1);
+	letters.push("i");
+	points.push(1);
+	letters.push("i");
+	points.push(1);
+	letters.push("i");
+	points.push(1);
+	letters.push("i");
+	points.push(1);
+	letters.push("i");
+	points.push(1);
+	letters.push("i");
+	points.push(1);
+	letters.push("j");
+	points.push(3);
+	letters.push("j");
+	points.push(3);
+	letters.push("k");
+	points.push(2);
+	letters.push("k");
+	points.push(2);
+	letters.push("k");
+	points.push(2);
+	letters.push("l");
+	points.push(2);
+	letters.push("l");
+	points.push(2);
+	letters.push("l");
+	points.push(2);
+	letters.push("ł");
+	points.push(3);
+	letters.push("ł");
+	points.push(3);
+	letters.push("m");
+	points.push(2);
+	letters.push("m");
+	points.push(2);
+	letters.push("m");
+	points.push(2);
+	letters.push("n");
+	points.push(1);
+	letters.push("n");
+	points.push(1);
+	letters.push("n");
+	points.push(1);
+	letters.push("n");
+	points.push(1);
+	letters.push("n");
+	points.push(1);
+	letters.push("ń");
+	points.push(7);
+	letters.push("o");
+	points.push(1);
+	letters.push("o");
+	points.push(1);
+	letters.push("o");
+	points.push(1);
+	letters.push("o");
+	points.push(1);
+	letters.push("o");
+	points.push(1);
+	letters.push("o");
+	points.push(1);
+	letters.push("ó");
+	points.push(5);
+	letters.push("p");
+	points.push(2);
+	letters.push("p");
+	points.push(2);
+	letters.push("p");
+	points.push(2);
+	letters.push("r");
+	points.push(1);
+	letters.push("r");
+	points.push(1);
+	letters.push("r");
+	points.push(1);
+	letters.push("r");
+	points.push(1);
+	letters.push("s");
+	points.push(1);
+	letters.push("s");
+	points.push(1);
+	letters.push("s");
+	points.push(1);
+	letters.push("s");
+	points.push(1);
+	letters.push("ś");
+	points.push(5);
+	letters.push("t");
+	points.push(2);
+	letters.push("t");
+	points.push(2);
+	letters.push("t");
+	points.push(2);
+	letters.push("u");
+	points.push(3);
+	letters.push("u");
+	points.push(3);
+	letters.push("w");
+	points.push(1);
+	letters.push("w");
+	points.push(1);
+	letters.push("w");
+	points.push(1);
+	letters.push("w");
+	points.push(1);
+	letters.push("y");
+	points.push(2);
+	letters.push("y");
+	points.push(2);
+	letters.push("y");
+	points.push(2);
+	letters.push("y");
+	points.push(2);
+	letters.push("z");
+	points.push(1);
+	letters.push("z");
+	points.push(1);
+	letters.push("z");
+	points.push(1);
+	letters.push("z");
+	points.push(1);
+	letters.push("z");
+	points.push(1);
+	letters.push("ż");
+	points.push(5);
+	letters.push("ź");
+	points.push(9);
+
+	function countWords(words) {
+	  var globalcounter = 0;
+	  for (var i = 0; i < words.length; i++) {
+	    var wordcounter = 0;
+	    var wordbonus = 1;
+	    var sevencounter = 0;
+
+	    for (var j = 0; j < words[i].length; j++) {
+	      if (words[i][j].bonus == true) {
+	        sevencounter++;
+	        if (table[words[i][j].row][words[i][j].column] == '2l') {
+	          wordcounter += points[words[i][j].letter] * 2;
+	        }
+	        if (table[words[i][j].row][words[i][j].column] == '3l') {
+	          wordcounter += points[words[i][j].letter] * 3;
+	        }
+
+	        if (table[words[i][j].row][words[i][j].column] == 0) {
+	          wordcounter += points[words[i][j].letter];
+	        }
+	        if (table[words[i][j].row][words[i][j].column] == '3s') {
+	          wordcounter += points[words[i][j].letter];
+	          wordbonus = wordbonus * 3;
+	        }
+	        if (table[words[i][j].row][words[i][j].column] == '2s') {
+	          wordcounter += points[words[i][j].letter];
+	          wordbonus = wordbonus * 2;
+	        }
+
+	      } else {
+	        //alert('say hello');
+	        wordcounter += points[words[i][j].letter];
+	      }
+
+	    }
+
+	    if (sevencounter == 7) {
+	      globalcounter += 50;
+	    }
+
+
+	    wordcounter = wordcounter * wordbonus;
+	    globalcounter += wordcounter;
+	  }
+
+	  return globalcounter;
+	}
+
+
+	function findUnit(row, column) {
+	  for (var i = 0; i < units_done.length; i++) {
+	    if (units_done[i].row == row && units_done[i].column == column) {
+	      return units_done[i];
+	    }
+	  }
+	  for (var i = 0; i < units.length; i++) {
+	    if (units[i].row == row && units[i].column == column) {
+	      return units[i];
+	    }
+	  }
+	  for (var i = 0; i < exes.length; i++) {
+	    if (exes[i].row == row && exes[i].column == column) {
+	      return exes[i];
+	    }
+	  }
+	  for (var i = 0; i < decks.length; i++) {
+	    if (decks[i].row == row && decks[i].column == column) {
+	      return decks[i];
+	    }
+	  }
+	  return null;
+	}
+
+
+	function checkLetter(row, column) {
+
+	  var contact = false;
+	  var sides = '';
+	  for (var i = 0; i < units_done.length; i++) {
+	    if (units_done[i].row == row - 1 && units_done[i].column == column) {
+
+	      contact = true;
+	      contactmap.set(units_done[i], "up");
+	      sides += 'up';
+	    }
+	    if (units_done[i].row == row + 1 && units_done[i].column == column) {
+
+	      contact = true;
+	      contactmap.set(units_done[i], "down");
+	      sides += 'down';
+	    }
+	    if (units_done[i].row == row && units_done[i].column == column - 1) {
+
+	      contact = true;
+	      contactmap.set(units_done[i], "left");
+	      sides += 'left';
+	    }
+	    if (units_done[i].row == row && units_done[i].column == column + 1) {
+
+	      contact = true;
+	      contactmap.set(units_done[i], "right");
+	      sides += 'right';
+	    }
+
+	  }
+	  return sides;
+	}
+
+
+	function unitsSorterColumn(a, b) {
+	  var x = a.column;
+	  var y = b.column;
+	  return ((x < y) ? -1 : ((x > y) ? 1 : 0));
+	}
+
+	function unitsSorterRow(a, b) {
+	  var x = a.row;
+	  var y = b.row;
+	  return ((x < y) ? -1 : ((x > y) ? 1 : 0));
+	}
+
+	function sortNumber(a, b) {
+	  return a - b;
+	}
+
+	function dictionary(words) {
+	  var dat = false;
+	  toBreak = false;
+	  $('#final').prop('disabled', true);
+
+	  for (var i = 0; i < words.length; i++) {
+	    var realword = new String();
+	    for (var j = 0; j < words[i].length; j++) {
+	      realword += letters[words[i][j].letter];
+	    }
+
+	    checkWord(realword).done(function(data) {
+	      dat = JSON.parse(data);
+	      if (dat == false || toBreak == true) {
+	        $('#final').prop('disabled', true);
+	        toBreak = true;
+	        return;
+	      } else {
+	        $('#final').prop('disabled', false);
+	      }
+
+
+	    });
+	  }
+
+	}
+
+	function doClass(words) {
+	  var words2 = new Array();
+	  for (var i = 0; i < words.length; i++) {
+	    word_temp = new Word(words[i], 0);
+	    words2.push(word_temp);
+
+	  }
+	  words3 = new Words(words2, lastScore);
+	  return words3;
+	}
+
+	function checkWord(word) {
+	  return $.get('/scrab/checkword', 'id=' + word);
+	}
+
+	function submitWord() {
+	  units.sort(unitsSorterColumn);
+	  units.sort(unitsSorterRow);
+	  units_done.sort(unitsSorterColumn);
+	  units_done.sort(unitsSorterRow);
+
+	  var cbool = true;
+	  var crow = true;
+
+	  for (var i = 0; i < units.length; i++) {
+	    if (units[i].column != units[0].column) {
+	      cbool = false;
+	    }
+	  }
+
+	  for (var i = 0; i < units.length; i++) {
+	    if (units[i].row != units[0].row) {
+	      crow = false;
+	    }
+	  }
+
+	  if (!crow && !cbool) {
+	    $('#final').prop('disabled', true);
+	    return;
+	  }
+
+	  if (units.length == 1) {
+	    cbool = true;
+	    crow = true;
+	  }
+
+	  if (cbool) {
+	    var rownrs = new Array();
+	    for (var i = 0; i < units.length; i++) {
+	      rownrs.push(units[i].row);
+	    }
+	    //rownrs.sort();
+	    ok = true;
+	    var counter = 0;
+	    var difference = 0;
+	    var rowmiddle = 0;
+	    var mainword = new Array();
+	    for (var i = 0; i < rownrs.length - 1; i++) {
+	      if (rownrs[i] - rownrs[i + 1] != -1) {
+	        ok = false;
+
+	        counter++;
+	        difference = rownrs[i] - rownrs[i + 1];
+	        rowmiddle = rownrs[i + 1] - 1;
+	      }
+
+	    }
+	    if (!ok) {
+
+	      if (counter > 1) {
+	        $('#final').prop('disabled', true);
+	        return;
+	      }
+
+	      if (counter == 1 && difference != -2) {
+	        $('#final').prop('disabled', true);
+	        return;
+	      } else {
+
+	        alert(checkLetter(rowmiddle + 1, units[0].column));
+
+	        if (checkLetter(rowmiddle + 1, units[0].column).includes('up') &&
+	          checkLetter(rowmiddle - 1, units[0].column).includes('down')) {
+
+
+	          mainword.push(findUnit(rowmiddle, units[0].column));
+
+	          for (var i = 0; i < rownrs.length; i++) {
+	            mainword.push(findUnit(rownrs[i], units[0].column));
+	          }
+	          mainword.sort(unitsSorterColumn);
+	          mainword.sort(unitsSorterRow);
+	        } else { $('#final').prop('disabled', true); return; }
+
+
+	        //alert(JSON.stringify(contactmap));
+	      }
+	    }
+	    if (ok) {
+	      var uprows = new Array();
+	      if (checkLetter(rownrs[0], units[0].column).includes('up')) {
+
+	        for (var i = 0; i < units_done.length; i++) {
+	          if (units_done[i].row < rownrs[0] && units_done[i].column == units[0].column) {
+	            uprows.push(units_done[i].row);
+	          }
+	        }
+	      }
+	      uprows.sort(sortNumber);
+	      uprows.reverse();
+
+	      var uprowsfinal = new Array();
+	      uprowsfinal.push(uprows[0]);
+	      for (var i = 0; i < uprows.length - 1; i++) {
+	        if (uprows[i] - uprows[i + 1] == 1) {
+	          //if (!uprowsfinal.includes(uprows[i])){
+	          //uprowsfinal.push(uprows[i]);
+	          //}
+	          if (!uprowsfinal.includes(uprows[i + 1])) {
+	            uprowsfinal.push(uprows[i + 1]);
+	          }
+	        } else { break; }
+
+	      }
+	      //alert(JSON.stringify(uprowsfinal));
+
+	      var downrows = new Array();
+	      if (checkLetter(rownrs[rownrs.length - 1], units[0].column).includes('down')) {
+
+	        for (var i = 0; i < units_done.length; i++) {
+	          if (units_done[i].row > rownrs[0] && units_done[i].column == units[0].column) {
+	            downrows.push(units_done[i].row);
+	          }
+	        }
+	      }
+	      downrows.sort(sortNumber);
+	      //uprows.reverse();
+
+	      var downrowsfinal = new Array();
+	      downrowsfinal.push(downrows[0]);
+	      for (var i = 0; i < downrows.length - 1; i++) {
+	        if (downrows[i] - downrows[i + 1] == -1) {
+	          //if (!uprowsfinal.includes(uprows[i])){
+	          //uprowsfinal.push(uprows[i]);
+	          //}
+	          if (!downrowsfinal.includes(downrows[i + 1])) {
+	            downrowsfinal.push(downrows[i + 1]);
+	          }
+	        } else { break; }
+
+	      }
+
+	      for (var i = 0; i < uprowsfinal.length; i++) {
+
+	        downrowsfinal.push(uprowsfinal[i]);
+	      }
+
+	      for (i = 0; i < downrowsfinal.length; i++) {
+	        if (findUnit(downrowsfinal[i], units[0].column) != null) {
+	          mainword.push(findUnit(downrowsfinal[i], units[0].column));
+	        }
+	      }
+	      for (i = 0; i < units.length; i++) {
+	        mainword.push(units[i]);
+	      }
+
+	    }
+	    var contact = false
+	    for (var i = 0; i < units.length; i++) {
+
+	      if (checkLetter(units[i].row, units[i].column) != '') {
+	        contact = true;
+	      }
+	    }
+
+
+	    contactmap.clear();
+
+	    for (var i = 0; i < units.length; i++) {
+
+	      checkLetter(units[i].row, units[i].column)
+	    }
+
+
+	    var words = new Array();
+	    if (gameCounter == 0) {
+
+	      if (mainword.length != 1) {
+
+	        words.push(mainword);
+	        lastScore = countWords(words);
+	        dictionary(words);
+	        words3 = doClass(words);
+	      }
+
+	      return;
+	    }
+
+	    if (!contact) {
+	      $('#final').prop('disabled', true);
+	      return;
+	    }
+
+	    var colnrs = new Array();
+	    var wordnrs = new Array();
+
+
+	    contactmap.forEach(function(value, key) {
+	      colnrs.length = 0;
+	      if (value == "right") {
+	        wordnrs.length = 0;
+	        colnrs.length = 0;
+	        for (var j = 0; j < units_done.length; j++) {
+
+	          if (units_done[j].row == key.row) {
+	            colnrs.push(units_done[j].column);
+	          }
+	        }
+	        colnrs.sort(sortNumber);
+
+	        var colnrs2 = new Array();
+
+	        for (var k = 0; k < colnrs.length; k++) {
+	          if (colnrs[k] >= key.column) {
+
+	            colnrs2.push(colnrs[k]);
+
+	          }
+	        }
+
+	        colnrs = colnrs2;
+
+
+	        var still = true;
+	        var wordUnits = new Array();
+	        if (colnrs.length == 1) {
+	          var wordUnit = findUnit(key.row, key.column);
+	          wordUnits.push(wordUnit);
+	        } else {
+
+	          for (var j = 0; j < colnrs.length - 1; j++) {
+
+	            if (still && colnrs[j] >= key.column && colnrs[j] - colnrs[j + 1] == -1) {
+	              if (!wordnrs.includes(colnrs[j])) {
+	                wordnrs.push(colnrs[j]);
+	              }
+	              if (!wordnrs.includes(colnrs[j + 1])) {
+	                wordnrs.push(colnrs[j + 1]);
+	              }
+	            } else {
+
+	              break;
+	            }
+
+	          }
+
+	          if (wordnrs.length == 0) {
+	            wordnrs.push(colnrs[0]);
+	          }
+
+	        }
+
+
+	        for (var j = 0; j < wordnrs.length; j++) {
+	          var wordUnit = findUnit(key.row, wordnrs[j]);
+	          wordUnits.push(wordUnit);
+
+	        }
+
+	        var second = false;
+
+	        //alert(JSON.stringify(wordUnits));
+	        for (var j = 0; j < words.length; j++) {
+	          if (words[j][0].row == key.row) {
+	            second = true;
+	            for (var k = 0; k < wordUnits.length; k++) {
+
+	              words[j].push(wordUnits[k]);
+	            }
+	          }
+	        }
+
+	        if (second == false) {
+
+	          var newunits = new Array();
+
+	          for (var j = 0; j < units.length; j++) {
+	            if (units[j].row == key.row) {
+	              newunits.push(units[j]);
+	            }
+	          }
+
+	          for (var j = 0; j < newunits.length; j++) {
+	            wordUnits.push(newunits[j]);
+	          }
+
+	          if (wordUnits.length > 1) {
+	            wordUnits.sort(unitsSorterRow);
+	            wordUnits.sort(unitsSorterColumn);
+	            words.push(wordUnits);
+	          }
+	        }
+
+	        //alert(JSON.stringify(wordUnits));
+
+	      }
+
+	      if (value == "left") {
+	        colnrs.length = 0;
+	        wordnrs.length = 0;
+	        var wordUnits = new Array();
+	        for (var j = 0; j < units_done.length; j++) {
+
+	          if (units_done[j].row == key.row) {
+	            colnrs.push(units_done[j].column);
+	          }
+	        }
+	        colnrs.sort(sortNumber);
+
+	        for (var k = 0; k < colnrs.length; k++) {
+	          if (colnrs[k] > key.column) {
+
+	            colnrs.splice(k, colnrs.length - k);
+
+	          }
+	        }
+	        colnrs.reverse();
+	        var still = true;
+	        if (colnrs.length == 1) {
+	          var wordUnit = findUnit(key.row, key.column);
+	          wordUnits.push(wordUnit);
+	        } else {
+	          for (var j = 0; j < colnrs.length - 1; j++) {
+
+	            if (still && colnrs[j] <= key.column && colnrs[j] - colnrs[j + 1] == 1) {
+	              if (!wordnrs.includes(colnrs[j])) {
+	                wordnrs.push(colnrs[j]);
+	              }
+	              if (!wordnrs.includes(colnrs[j + 1])) {
+	                wordnrs.push(colnrs[j + 1]);
+
+	              }
+	            } else { break; }
+	          }
+
+	          if (wordnrs.length == 0) {
+	            wordnrs.push(colnrs[0]);
+	          }
+
+	        }
+
+
+	        for (var j = 0; j < wordnrs.length; j++) {
+	          var wordUnit = findUnit(key.row, wordnrs[j]);
+	          wordUnits.push(wordUnit);
+
+	        }
+
+
+	        var newunits = new Array();
+
+	        for (var j = 0; j < units.length; j++) {
+	          if (units[j].row == key.row) {
+	            newunits.push(units[j]);
+	          }
+	        }
+
+	        for (var j = 0; j < newunits.length; j++) {
+	          wordUnits.push(newunits[j]);
+	        }
+	        if (wordUnits.length > 1) {
+
+	          wordUnits.sort(unitsSorterRow);
+	          wordUnits.sort(unitsSorterColumn);
+	          words.push(wordUnits);
+	        }
+
+	        //alert(JSON.stringify(wordUnits));
+
+
+	      }
+
+	    });
+
+	    if (mainword.length != 1) {
+	      mainword.sort(unitsSorterColumn);
+	      mainword.sort(unitsSorterRow);
+	      words.push(mainword);
+	    }
+	    //alert(JSON.stringify(words));
+
+
+	  }
+
+
+	  if (crow) {
+
+	    var colnrs = new Array();
+	    for (var i = 0; i < units.length; i++) {
+	      colnrs.push(units[i].column);
+	    }
+	    //colnrs.sort();
+	    ok = true;
+	    var counter = 0;
+	    var difference = 0;
+	    var rowmiddle = 0;
+	    var mainword = new Array();
+	    for (var i = 0; i < colnrs.length - 1; i++) {
+	      if (colnrs[i] - colnrs[i + 1] != -1) {
+	        ok = false;
+	        counter++;
+	        difference = colnrs[i] - colnrs[i + 1];
+	        colmiddle = colnrs[i + 1] - 1;
+	      }
+
+	    }
+	    if (!ok) {
+	      if (counter > 1) {
+	        $('#final').prop('disabled', true);
+	        return;
+	      }
+
+	      if (counter == 1 && difference != -2) {
+	        $('#final').prop('disabled', true);
+	        return;
+	      } else {
+	        alert(checkLetter(units[0].row, colmiddle + 1));
+
+	        if (checkLetter(units[0].row, colmiddle + 1).includes('left') &&
+	          checkLetter(units[0].row, colmiddle - 1).includes('right')) {
+
+
+	          mainword.push(findUnit(units[0].row, colmiddle));
+
+	          for (var i = 0; i < colnrs.length; i++) {
+	            mainword.push(findUnit(units[0].row, colnrs[i]));
+	          }
+	          mainword.sort(unitsSorterColumn);
+	          mainword.sort(unitsSorterRow);
+	        } else { $('#final').prop('disabled', true); return; }
+
+
+	        //alert(JSON.stringify(contactmap));
+	      }
+	    }
+	    if (ok) {
+	      var leftcols = new Array();
+	      if (checkLetter(units[0].row, colnrs[0]).includes('left')) {
+
+	        for (var i = 0; i < units_done.length; i++) {
+	          if (units_done[i].column < colnrs[0] && units_done[i].row == units[0].row) {
+	            leftcols.push(units_done[i].column);
+	          }
+	        }
+	      }
+	      leftcols.sort(sortNumber);
+	      leftcols.reverse();
+	      //alert('leftcols to' + leftcols);
+	      var leftcolsfinal = new Array();
+	      leftcolsfinal.push(leftcols[0]);
+	      for (var i = 0; i < leftcols.length - 1; i++) {
+	        if (leftcols[i] - leftcols[i + 1] == 1) {
+	          //if (!uprowsfinal.includes(uprows[i])){
+	          //uprowsfinal.push(uprows[i]);
+	          //}
+	          if (!leftcolsfinal.includes(leftcols[i + 1])) {
+	            leftcolsfinal.push(leftcols[i + 1]);
+	          }
+	        } else { break; }
+
+	      }
+	      //alert(JSON.stringify(uprowsfinal));
+
+	      var rightcols = new Array();
+	      if (checkLetter(units[0].row, colnrs[colnrs.length - 1]).includes('right')) {
+
+	        for (var i = 0; i < units_done.length; i++) {
+	          if (units_done[i].column > colnrs[colnrs.length - 1] && units_done[i].row == units[0].row) {
+	            rightcols.push(units_done[i].column);
+	          }
+	        }
+	      }
+	      rightcols.sort(sortNumber);
+	      //uprows.reverse();
+
+	      var rightcolsfinal = new Array();
+	      rightcolsfinal.push(rightcols[0]);
+	      for (var i = 0; i < rightcols.length - 1; i++) {
+	        if (rightcols[i] - rightcols[i + 1] == -1) {
+	          //if (!uprowsfinal.includes(uprows[i])){
+	          //uprowsfinal.push(uprows[i]);
+	          //}
+	          if (!rightcolsfinal.includes(rightcols[i + 1])) {
+	            rightcolsfinal.push(rightcols[i + 1]);
+	          }
+	        } else { break; }
+
+	      }
+
+
+	      for (var i = 0; i < leftcolsfinal.length; i++) {
+
+	        rightcolsfinal.push(leftcolsfinal[i]);
+	      }
+
+
+	      for (i = 0; i < rightcolsfinal.length; i++) {
+	        if (findUnit(units[0].row, rightcolsfinal[i]) != null) {
+
+	          mainword.push(findUnit(units[0].row, rightcolsfinal[i]));
+	        }
+	      }
+
+
+	      for (i = 0; i < units.length; i++) {
+	        mainword.push(units[i]);
+	      }
+	    }
+	    var contact = false;
+	    for (var i = 0; i < units.length; i++) {
+
+	      if (checkLetter(units[i].row, units[i].column) != '') {
+	        contact = true;
+	      }
+	    }
+
+
+	    contactmap.clear();
+
+	    for (var i = 0; i < units.length; i++) {
+
+	      checkLetter(units[i].row, units[i].column)
+	    }
+
+
+	    var words = new Array();
+
+
+	    if (gameCounter == 0) {
+	      if (mainword.length != 1) {
+	        words.push(mainword);
+	        lastScore = countWords(words);
+	        dictionary(words);
+	        words3 = doClass(words);
+	      }
+
+	      //alert(JSON.stringify(words3));
+	      return;
+	    }
+
+	    if (!contact) {
+	      $('#final').prop('disabled', true);
+	      return;
+	    }
+
+	    var rownrs = new Array();
+	    var wordnrs = new Array();
+
+	    contactmap.forEach(function(value, key) {
+	      rownrs.length = 0;
+	      if (value == "down") {
+	        var wordUnits = new Array();
+	        wordUnits.length = 0;
+	        wordnrs.length = 0;
+	        rownrs.length = 0;
+	        for (var j = 0; j < units_done.length; j++) {
+
+	          if (units_done[j].column == key.column) {
+	            rownrs.push(units_done[j].row);
+	          }
+	        }
+
+
+	        rownrs.sort(sortNumber);
+
+	        var rownrs2 = new Array();
+
+	        for (var k = 0; k < rownrs.length; k++) {
+	          if (rownrs[k] >= key.row) {
+
+	            rownrs2.push(rownrs[k]);
+
+	          }
+	        }
+
+	        rownrs = rownrs2;
+
+
+	        var still = true;
+
+	        if (rownrs.length == 1) {
+	          var wordUnit = findUnit(key.row, key.column);
+	          wordUnits.push(wordUnit);
+	        } else {
+
+	          for (var j = 0; j < rownrs.length - 1; j++) {
+
+	            if (still && rownrs[j] >= key.row && rownrs[j] - rownrs[j + 1] == -1) {
+
+
+	              if (!wordnrs.includes(rownrs[j])) {
+	                wordnrs.push(rownrs[j]);
+	              }
+	              if (!wordnrs.includes(rownrs[j + 1])) {
+	                wordnrs.push(rownrs[j + 1]);
+	              }
+	            } else {
+
+	              break;
+	            }
+
+	          }
+
+	          if (wordnrs.length == 0) {
+	            wordnrs.push(rownrs[0]);
+	          }
+
+	        }
+
+
+	        for (var j = 0; j < wordnrs.length; j++) {
+	          var wordUnit = findUnit(wordnrs[j], key.column);
+	          wordUnits.push(wordUnit);
+
+	        }
+
+	        var second = false;
+
+	        for (var j = 0; j < words.length; j++) {
+	          if (words[j][0].column == key.column) {
+	            second = true;
+
+	            for (var k = 0; k < wordUnits.length; k++) {
+
+	              words[j].push(wordUnits[k]);
+	            }
+	          }
+	        }
+
+	        if (second == false) {
+
+	          var newunits = new Array();
+
+	          for (var j = 0; j < units.length; j++) {
+	            if (units[j].column == key.column) {
+	              newunits.push(units[j]);
+	            }
+	          }
+
+	          for (var j = 0; j < newunits.length; j++) {
+	            wordUnits.push(newunits[j]);
+	          }
+
+
+	          if (wordUnits.length > 1) {
+
+	            wordUnits.sort(unitsSorterRow);
+	            wordUnits.sort(unitsSorterColumn);
+	            words.push(wordUnits);
+	          }
+	        }
+
+	        //alert(JSON.stringify(wordUnits));
+
+	      }
+
+	      if (value == "up") {
+	        wordnrs.length = 0;
+	        rownrs.length = 0;
+	        var wordUnits = new Array();
+	        for (var j = 0; j < units_done.length; j++) {
+
+	          if (units_done[j].column == key.column) {
+	            rownrs.push(units_done[j].row);
+	          }
+	        }
+	        rownrs.sort(sortNumber);
+
+	        for (var k = 0; k < rownrs.length; k++) {
+	          if (rownrs[k] > key.row) {
+
+	            rownrs.splice(k, rownrs.length - k);
+
+	          }
+	        }
+	        rownrs.reverse();
+	        var still = true;
+	        if (rownrs.length == 1) {
+	          var wordUnit = findUnit(key.row, key.column);
+	          wordUnits.push(wordUnit);
+
+	        } else {
+	          for (var j = 0; j < rownrs.length - 1; j++) {
+
+	            if (still && rownrs[j] <= key.row && rownrs[j] - rownrs[j + 1] == 1) {
+	              if (!wordnrs.includes(rownrs[j])) {
+	                wordnrs.unshift(rownrs[j]);
+	              }
+	              if (!wordnrs.includes(rownrs[j + 1])) {
+	                wordnrs.unshift(rownrs[j + 1]);
+	              }
+	            } else {
+	              break;
+	            }
+
+
+	          }
+	          if (wordnrs.length == 0) {
+	            wordnrs.push(rownrs[0]);
+	          }
+
+	        }
+
+
+	        for (var j = 0; j < wordnrs.length; j++) {
+	          var wordUnit = findUnit(wordnrs[j], key.column);
+	          wordUnits.push(wordUnit);
+
+	        }
+
+
+	        var newunits = new Array();
+
+	        for (var j = 0; j < units.length; j++) {
+	          if (units[j].column == key.column) {
+	            newunits.push(units[j]);
+	          }
+	        }
+
+	        for (var j = 0; j < newunits.length; j++) {
+	          wordUnits.push(newunits[j]);
+	        }
+
+	        words.unshift(wordUnits);
+
+
+	        //alert(JSON.stringify(wordUnits));
+
+
+	      }
+
+	    });
+
+	    if (mainword.length != 1) {
+	      mainword.sort(unitsSorterColumn);
+	      mainword.sort(unitsSorterRow);
+	      words.push(mainword);
+	      //alert('mainword to ' + JSON.stringify(mainword));
+	    }
+	  }
+	  //for (var z=0;z<words.length;z++){
+	  //alert('word nr ' + z +' to ' + JSON.stringify(words[z]));
+	  //}
+
+	  lastScore = countWords(words);
+
+	  dictionary(words);
+	  words3 = doClass(words);
+	  //alert(JSON.stringify(words3));
+
+
+	}
+
+
+	function transfer(unit) {
+	  $('#id' + unit.letter).draggable({
+	    disabled: true
+	  });
+
+	  $('#doneLetters').append($('#id' + unit.letter));
+
+	  for (var i = 0; i < currentLetters.length; i++) {
+	    if (currentLetters[i] === unit.letter) {
+	      currentLetters.splice(i, 1);
+	    }
+	  }
+
+	}
+
+	function newWords(words) {
+
+	  for (var i = 0; i < units.length; i++) {
+
+	    var unit_temp = new Unit(units[i].letter, units[i].row, units[i].column, false);
+
+	    units_done.push(unit_temp);
+	    transfer(units[i]);
+	  }
+	  getLetters(units.length);
+	  myScore += lastScore;
+	  units.length = 0;
+	  gameCounter++;
+	  $('#final').prop('disabled', true);
+
+	  var newWordsData = JSON.stringify(words);
+	  $('#scores_comp').addClass('blink_me');
+	  $('#scores_play').removeClass('blink_me');
+	  $.post('/scrab/newwords', newWordsData, processWordsData);
+	}
+
+	function getWordsOnly() {
+
+	  $.post('/scrab/newwordsonly', processWordsData);
+	}
+
+	function processWordsData(data) {
+	  var finalWord = data;
+
+	  for (var i = 0; i < finalWord.word.length - 1; i++) {
+	    $('#doneLetters').append('<div style="position:fixed;top: ' +
+	      (finalWord.word[i].row * length) + 'px;left: ' +
+	      finalWord.word[i].column * length + 'px;" class="letter" id="id' +
+	      finalWord.word[i].letter + '">' + letters[finalWord.word[i].letter].toUpperCase() + ' </div>');
+	    var tempUnit = new Unit(finalWord.word[i].letter, finalWord.word[i].row, finalWord.word[i].column, false);
+	    units_done.push(finalWord.word[i]);
+	    //units.push(finalWord.word[i]);
+	  }
+
+	  if (finalWord.word[finalWord.word.length - 1].row == -1) {
+	    alert("game over for comp");
+	  }
+
+	  botscore += finalWord.word[finalWord.word.length - 1].letter;
+	  $('#scores_comp').html('KOMPUTER: ' + botscore);
+	  $('#scores_play').html('PLAYER: ' + myScore);
+
+	  $('#scores_play').addClass('blink_me');
+	  $('#scores_comp').removeClass('blink_me');
+
+	}
+
+	function getLetters(howmany) {
+
+	  $.get('/scrab/getletters', 'id=' + howmany, processData);
+	}
+
+	var initleft = 0;
+	var inittop = 0;
+
+	function processData(data) {
+
+	  lettersArr = data;
+
+	  if (lettersArr[0] == -1 && currentLetters.length == 0) {
+	    alert("game over");
+	    return;
+	  }
+	  $('#letters').empty();
+	  var allLetts = new Array();
+
+	  if (lettersArr[0] != -1) {
+
+	    for (var i = 0; i < lettersArr.length; i++) {
+	      allLetts.push(lettersArr[i]);
+	    }
+	  }
+	  for (var i = 0; i < currentLetters.length; i++) {
+	    allLetts.push(currentLetters[i]);
+	  }
+
+	  decks.length = 0;
+	  for (i = 0; i < allLetts.length; i++) {
+	    lett = allLetts[i];
+
+	    $('#letters').append('<div style="position: fixed;top:' + 16 * length +
+	      'px; left:' + i * length + 'px" class="draggable letter" id="id' + allLetts[i] +
+	      '">' + letters[allLetts[i]].toUpperCase() + ' </div>');
+
+	    decks.push(new Deck(allLetts[i], 16, i, true));
+
+	    $('#id' + allLetts[i]).draggable({
+
+
+	      start: function(eventt, uii) {
+	        initleft = uii.offset.left;
+	        inittop = uii.offset.top;
+
+	      },
+
+
+	      stop: function(event, ui) {
+
+
+	        var lett = $(this).attr('id');
+	        var lettstr = lett.slice(2);
+	        var lettnr = parseInt(lettstr);
+	        var top = ui.offset.top;
+	        var left = ui.offset.left;
+	        var row = parseInt(top / length);
+	        var column = parseInt(left / length);
+
+	        if (findUnit(row, column) != null) {
+
+	          $(this).offset({ top: inittop, left: initleft });
+	        } else {
+
+
+	          var contains = false;
+	          var contains_c = 0;
+	          unit_temp = new Unit(lettnr, row, column, true);
+	          for (var k = 0; k < units.length; k++) {
+	            if (units[k].letter == lettnr) {
+	              contains = true;
+	              contains_c = k;
+	            }
+	          }
+
+	          if (contains == true) {
+	            units[contains_c].row = row;
+	            units[contains_c].column = column;
+
+	          }
+
+	          if (contains == true && (row > 14 || column > 14)) {
+	            units.splice(contains_c, 1);
+	            submitWord();
+	          }
+
+	          if (contains == false) {
+	            if (row < 15 && row >= 0 && column < 15 && column >= 0) {
+
+	              units.push(new Unit(lettnr, row, column, true));
+	            }
+
+
+	          }
+	          if (units.length > 0 && ui.offset.top <= 14 * length && ui.offset.left <= 14 * length) {
+	            submitWord();
+	          }
+
+	          if (row == 16 && column >= 10 && column <= 16) {
+
+	            var exesContains = false;
+	            var exesContainsCounter = 0;
+	            for (var i = 0; i < exes.length; i++) {
+	              if (exes[i].letter == lettnr) {
+	                exesContains = true;
+	                exesContainsCounter = i;
+	              }
+	            }
+
+	            if (exesContains == false) {
+	              exes.push(new Ex(lettnr, row, column, true));
+	            } else {
+	              exes[exesContainsCounter].row = row;
+	              exes[exesContainsCounter].column = column;
+	            }
+	          } else {
+	            var exesContains = false;
+	            var exesContainsCounter = 0;
+	            for (var i = 0; i < exes.length; i++) {
+	              if (exes[i].letter == lettnr) {
+	                exesContains = true;
+	                exesContainsCounter = i;
+	              }
+	            }
+	            if (exesContains) {
+	              exes.splice(exesContainsCounter, 1);
+	            }
+	          }
+
+
+	          if (row == 16 && column >= 0 && column <= 6) {
+
+	            var decksContains = false;
+	            var decksContainsCounter = 0;
+	            for (var i = 0; i < decks.length; i++) {
+	              if (decks[i].letter == lettnr) {
+	                decksContains = true;
+	                decksContainsCounter = i;
+	              }
+	            }
+
+	            if (decksContains == false) {
+	              decks.push(new Deck(lettnr, row, column, true));
+
+	            } else {
+	              decks[decksContainsCounter].row = row;
+	              decks[decksContainsCounter].column = column;
+	            }
+	          } else {
+	            var decksContains = false;
+	            var decksContainsCounter = 0;
+	            for (var i = 0; i < decks.length; i++) {
+	              if (decks[i].letter == lettnr) {
+	                decksContains = true;
+	                decksContainsCounter = i;
+	              }
+	            }
+	            if (decksContains) {
+	              decks.splice(decksContainsCounter, 1);
+	            }
+	          }
+
+
+	        }
+
+	      }
+
+	    });
+
+	    currentLetters = allLetts;
+	    if (currentLetters.length == 0) {
+	      alert("KONIEC GRY");
+
+
+	    }
+
+	    $('.draggable').draggable({
+	      snapMode: 'both',
+	      snapTolerance: 35,
+	      zIndex: 10000,
+	      grid: [35, 35]
+	    });
+	  }
+	}
+
+	function drawTable() {
+
+	  table = new Array(15);
+
+
+	  for (var i = 0; i < 15; i++) {
+	    table[i] = new Array(15);
+
+	    // 0 = normal, 1=slowna3, 2=slowna2, 3=slowna3, 4=slowna2
+
+
+	    for (var j = 0; j < 15; j++) {
+
+	      table[i][j] = 0;
+
+
+	    }
+	  }
+	  table[0][0] = "3s";
+	  table[0][7] = "3s";
+	  table[0][14] = "3s";
+	  table[7][0] = "3s";
+	  table[7][14] = "3s";
+	  table[14][0] = "3s";
+	  table[14][7] = "3s";
+	  table[14][14] = "3s";
+
+	  table[1][1] = "2s";
+	  table[2][2] = "2s";
+	  table[3][3] = "2s";
+	  table[4][4] = "2s";
+	  table[1][13] = "2s";
+	  table[2][12] = "2s";
+	  table[3][11] = "2s";
+	  table[4][10] = "2s";
+	  table[10][4] = "2s";
+	  table[11][3] = "2s";
+	  table[12][2] = "2s";
+	  table[13][1] = "2s";
+	  table[10][10] = "2s";
+	  table[11][11] = "2s";
+	  table[12][12] = "2s";
+	  table[12][12] = "2s";
+	  table[13][13] = "2s";
+
+	  table[7][7] = "2s";
+
+	  table[0][3] = "2l";
+	  table[0][11] = "2l";
+	  table[1][5] = "3l";
+	  table[1][10] = "3l";
+	  table[2][6] = "2l";
+	  table[2][9] = "2l";
+	  table[3][0] = "2l";
+	  table[3][7] = "2l";
+	  table[3][14] = "2l";
+	  table[5][1] = "3l";
+	  table[5][5] = "3l";
+	  table[5][9] = "3l";
+	  table[5][13] = "3l";
+	  table[6][2] = "2l";
+	  table[6][6] = "2l";
+	  table[6][8] = "2l";
+	  table[6][12] = "2l";
+	  table[7][3] = "2l";
+	  table[7][11] = "2l";
+	  table[8][2] = "2l";
+	  table[8][6] = "2l";
+	  table[8][8] = "2l";
+	  table[8][12] = "2l";
+	  table[9][1] = "3l";
+	  table[9][5] = "3l";
+	  table[9][9] = "3l";
+	  table[9][13] = "3l";
+	  table[11][0] = "2l";
+	  table[11][7] = "2l";
+	  table[11][14] = "2l";
+	  table[12][6] = "2l";
+	  table[12][8] = "2l";
+	  table[13][5] = "3l";
+	  table[13][9] = "3l";
+	  table[14][3] = "2l";
+	  table[14][11] = "2l";
+
+
+	  for (var i = 0; i < 15; i++) {
+
+	    for (var j = 0; j < 15; j++) {
+
+	      if (table[i][j] == 0) {
+
+	        $('#table').append('<div class="tile" style="position: fixed;left:' + i * length + 'px; top:' +
+	          j * length + 'px"> <img src="/scrab/images/tile.jpg"> </div>');
+
+	      }
+	      if (table[i][j] == '3s') {
+
+	        $('#table').append('<div class="tile" style="position: fixed;left:' + i * length + 'px; top:' +
+	          j * length + 'px"> <img src="/scrab/images/tilewx3.jpg"> </div>');
+
+	      }
+	      if (table[i][j] == '2s') {
+
+	        $('#table').append('<div class="tile" style="position: fixed;left:' + i * length + 'px; top:' +
+	          j * length + 'px"> <img src="/scrab/images/tilewx2.jpg"> </div>');
+
+	      }
+	      if (table[i][j] == '2l') {
+
+	        $('#table').append('<div class="tile" style="position: fixed;left:' + i * length + 'px; top:' +
+	          j * length + 'px"> <img src="/scrab/images/tilelx2.jpg"> </div>');
+
+	      }
+	      if (table[i][j] == '3l') {
+
+	        $('#table').append('<div class="tile" style="position: fixed;left:' + i * length + 'px; top:' +
+	          j * length + 'px"> <img src="/scrab/images/tilelx3.jpg"> </div>');
+
+	      }
+	    }
+	  }
+	}
+
+
+	function getHistory() {
+	  $.post('/scrab/gethistory', function(data) {
+	    $('#menu').empty();
+	    var h = data;
+	    for (var i = 0; i < h.histories.length; i++) {
+
+
+	      if (h.histories[i].history.win != null && h.histories[i].history.win != undefined &&
+	        h.histories[i].history.botpoints != null && h.histories[i].history.botpoints != undefined &&
+	        h.histories[i].history.humanpoints != null && h.histories[i].history.humanpoints != undefined &&
+	        h.histories[i].history.date != null && h.histories[i].history.date != undefined) {
+	        //alert(h.histories[i].history.humanpoints);
+
+	        $('#menu').append('<div>mecz nr ' + h.histories[i].history.id + ' rozegrany ' +
+	          h.histories[i].history.date + '</div><button onclick ="getmatch(' +
+	          h.histories[i].history.id + ')">ODCZYTAJ</button><br>');
+
+	      }
+	    }
+	    $('#menu').slideToggle(500);
+
+	  });
+	}
+
+	function exchange() {
+
+	  var exArr = new Array();
+	  var letCounter = 0;
+
+	  for (var i = 0; i < exes.length; i++) {
+	    $('#id' + exes[i].letter).remove();
+	    exArr.push(exes[i].letter);
+	    letCounter++;
+	    for (var j = 0; j < currentLetters.length; j++) {
+	      if (currentLetters[j] === exes[i].letter) {
+	        currentLetters.splice(j, 1);
+	      }
+	    }
+	  }
+
+
+	  exes.length = 0;
+	  units.length = 0;
+	  arrJson = JSON.stringify(exArr);
+
+	  $.post('/scrab/exchange', arrJson, function(data) {
+	    getLetters(letCounter);
+	  });
+	  getWordsOnly();
+	}
+
+	function getmatch(id) {
+
+	  $.post('/scrab/getmatch', id.toString(), function(data) {
+	    $('#doneLetters').empty();
+	    replayWords = data;
+	    replayCounter = 0;
+	    $('#menu').slideToggle();
+	    $('#forward').removeClass('replay');
+	    $('#back').removeClass('replay');
+	    drawTable();
+	  });
+	}
+
+	function forward() {
+
+
+	  if (replayCounter < replayWords.words.length) {
+	    for (var i = 0; i < replayWords.words[replayCounter].word.length; i++) {
+
+	      if (!($('#id' + replayWords.words[replayCounter].word[i].letter).length)) {
+
+	        $('#doneLetters').append('<div style="position:fixed;top: ' +
+	          (replayWords.words[replayCounter].word[i].row * length) +
+	          'px;left: ' + replayWords.words[replayCounter].word[i].column * length +
+	          'px;" class="letter" id="id' + replayWords.words[replayCounter].word[i].letter + '">' +
+	          letters[replayWords.words[replayCounter].word[i].letter].toUpperCase() + ' </div>');
+	      }
+	    }
+	  }
+	  if (replayCounter < replayWords.words.length) {
+	    replayCounter++;
+	  }
+
+
+	}
+
+	function back() {
+
+	  replayCounter--;
+
+	  if (replayCounter < 0) {
+	    replayCounter = 0;
+	  }
+
+	  for (var i = 0; i < replayWords.words[replayCounter].word.length; i++) {
+	    $('#id' + replayWords.words[replayCounter].word[i].letter).remove();
+	  }
+
+	}
+
+	function newGame() {
+	  $('#newGame').prop('disabled', true);
+	  botscore = 0;
+	  myScore = 0;
+	  currentLetters.length = 0;
+	  table.length = 0;
+	  units.length = 0;
+	  units_done.length = 0;
+	  drawTable();
+
+	  $('#letters').empty();
+	  $('#doneLetters').empty();
+	  $('#scores_comp').html('KOMPUTER: 0');
+	  $('#scores_play').html('PLAYER: 0');
+	  $('#scores_comp').removeClass('blink_me');
+	  $('#scores_play').removeClass('blink_me');
+	  $.get('/scrab/newgame', function(data) {
+
+	    getLetters(7);
+	    $('#newGame').prop('disabled', false);
+	    if (data.word != null) {
+
+	      var finalWord = data;
+	      for (var i = 0; i < finalWord.word.length - 1; i++) {
+	        $('#doneLetters').append('<div style="position:fixed;top: ' +
+	          (finalWord.word[i].row * length) + 'px;left: ' +
+	          finalWord.word[i].column * length + 'px;" class="letter" id="id' +
+	          finalWord.word[i].letter + '">' +
+	          letters[finalWord.word[i].letter].toUpperCase() + ' </div>');
+	        var tempUnit = new Unit(finalWord.word[i].letter, finalWord.word[i].row, finalWord.word[i].column, false);
+	        units_done.push(tempUnit);
+	      }
+	      gameCounter++;
+
+	      botscore += finalWord.word[finalWord.word.length - 1].letter;
+	      $('#scores_comp').html('KOMPUTER: ' + botscore);
+	      $('#scores_play').html('PLAYER: ' + myScore);
+	      $('#scores_comp').removeClass('blink_me');
+	      $('#scores_play').addClass('blink_me');
+	    } else {
+	      $('#scores_play').addClass('blink_me');
+	    }
+
+	  });
+
+	}
+
+	$(document).ready(function() {
+
+
+	}); //end function
+
+</script>
+
+</head>
+
+<body onload="">
+	<h1>RAD SCRABBLE</h1>
+	<div id="table"></div>
+	<br>
+	<br>
+	<br>
+	<br>
+	<br>
+	<br>
+	<br>
+	<br>
+	<br>
+	<br>
+	<br>
+	<br>
+	<br>
+	<br>
+	<br>
+	<br>
+	<br>
+	<br>
+	<br>
+	<br>
+	<br>
+	<br>
+	<br>
+	<br>
+	<br>
+	<button disabled id="final" onclick="newWords(words3)">DODAJ
+		SLOWO</button>
+	<button id="newGame" onclick="newGame()">NOWA GRA</button>
+	<button onclick="menu()">MENU</button>
+	<button onclick="exchange()">WYMIANA</button>
+	<button id="back" class="replay" onclick="back()">&lt&lt</button>
+	<button id="forward" class="replay" onclick="forward()">&gt&gt</button>
+	<div id="letters"></div>
+	<div id="doneLetters"></div>
+	<div class="scoresComp" id="scores_comp"></div>
+	<div class="scoresPlay" id="scores_play"></div>
+	<div id="menu"></div>
+	<div id="exchange"></div>
+
+</body>
+</html>
